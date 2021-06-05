@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 GUI = Tk()
-GUI.title('โปรแกรมบันทึกค่าใช้จ่าย By NKD')
+GUI.title('โปรแกรมบันทึกค่าใช้จ่าย By NINKINGDOSS')
 GUI.geometry('700x700+500+300')
 
 
@@ -42,7 +42,7 @@ filemenu.add_command(label='Export file')
 # # help menu
 
 def About():
-    messagebox.showinfo('About','สวัสดีฮะ บริจาคเราเป่า')
+    messagebox.showinfo('About','สวัสดีฮะ บริจาคเราเป่า by ninkingdoss')
 helpmenu = Menu(menubar)
 menubar.add_cascade(label='Help',menu=helpmenu)
 helpmenu.add_command(label='About',command=About)
@@ -105,14 +105,16 @@ def Save(event=None):
 		# บันทึกข้อมูลลง csv อย่าลืม import csv ด้วย
 		today = datetime.now().strftime('%a') # days['Mon'] = 'จันทร์'
 		print(today)
-		dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		stamp = datetime.now()
+		dt = stamp.strftime('%Y-%m-%d %H:%M:%S')
+		transactionid = stamp.strftime('%Y%m%d%H%M%f')
 		dt = days[today] + '-' + dt
 		with open('savedata.csv','a',encoding='utf-8',newline='') as f:
 			# with คือสั่งเปิดไฟล์แล้วปิดอัตโนมัติ
 			# 'a' การบันทึกเรื่อยๆ เพิ่มข้อมูลต่อจากข้อมูลเก่า
 			# newline='' ทำให้ข้อมูลไม่มีบรรทัดว่าง
 			fw = csv.writer(f) #สร้างฟังชั่นสำหรับเขียนข้อมูล
-			data = [dt,expense,price,quantity,total]
+			data = [transactionid,dt,expense,price,quantity,total]
 			fw.writerow(data)
 
 		# ทำให้เคอเซอร์กลับไปตำแหน่งช่องกรอก E1
@@ -179,7 +181,7 @@ def read_csv():
         #data = list(fr)คือการแปลงข้อมูลให้เราอ่านออก ลองโดยการprint
 #table
 LT = ttk.Label(T2,text='ตารางค่าใช้จ่าย',font=FONT1).pack(pady=20)
-header = ['วัน-เวลา', 'รายการ','ค่าใช้จ่าย','จำนวน','รวม']
+header = ['รหัสรายการ','วัน-เวลา', 'รายการ','ค่าใช้จ่าย','จำนวน','รวม']
 resulttable = ttk.Treeview(T2,columns=header,show='headings',height=10)
 resulttable.pack()
 # for i in range(len(header)):
@@ -189,19 +191,65 @@ for h in header:
     resulttable.heading(h,text=h)
 
 #####################ความกว้างของแต่ละcolumn###########################3
-headerwidth = [180,150,80,80,80]
+headerwidth = [100,150,150,80,80,80]
 for h,w in zip(header,headerwidth):
     resulttable.column(h,width=w)
 
 # resulttable.insert('', 'end',value=['จันทร','น้ำดื่ม','200','2','400'])
 
+alltransaction = {}
+
+def UpdateCSV():
+	with open('savedata.csv','w',newline='',encoding='utf-8') as f:
+		fw = csv.writer(f)
+		# เตรียมข้อมูลจาก alltransaction ให้กลายเป็น list
+		data = list(alltransaction.values())
+		fw.writerows(data) # multiple line from nested list [[],[],[]]
+		print('Table was updated')
+
+
+def DeleteRecord(event=None):
+	check = messagebox.askyesno('Confirm?','คุณต้องการลบข้อมูลใช่หรือไม่?')
+	print('YES/NO:',check)
+
+	if check == True:
+		print('delete')
+		select = resulttable.selection()
+		#print(select)
+		data = resulttable.item(select)
+		data = data['values']
+		transactionid = data[0]
+		#print(transactionid)
+		#print(type(transactionid))
+		del alltransaction[str(transactionid)] # delete data in dict
+		#print(alltransaction)
+		UpdateCSV()
+		update_table()
+	else:
+		print('cancel')
+
+BDelete = ttk.Button(T2,text='delete',command=DeleteRecord)
+BDelete.place(x=50,y=550)
+
+resulttable.bind('<Delete>',DeleteRecord)
+
 def update_table():
-    resulttable.delete(*resulttable.get_children())
-    data = read_csv()
-    for d in data: 
-        resulttable.insert('','end',value=d)
+	resulttable.delete(*resulttable.get_children())
+	# for c in resulttable.get_children():
+	# 	resulttable.delete(c)
+	try:
+		data = read_csv()
+		for d in data:
+			#creat transaction data
+			alltransaction[d[0]] = d # d[0] = transactionid
+			resulttable.insert('',0,value=d)
+		print(alltransaction)
+	except Exception as e:
+		print('No File')
+		print('ERROR:',e)
 
-update_table() 
 
-
+update_table()
+print('GET CHILD:',resulttable.get_children())
+GUI.bind('<Tab>',lambda x: E2.focus())
 GUI.mainloop()
