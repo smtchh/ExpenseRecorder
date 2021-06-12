@@ -6,7 +6,19 @@ from datetime import datetime
 
 GUI = Tk()
 GUI.title('โปรแกรมบันทึกค่าใช้จ่าย By NINKINGDOSS')
-GUI.geometry('700x700+500+300')
+# GUI.geometry('700x700+500+100')
+#การ set หน้าต่างให้อยู่ตรงกลาง
+w = 700
+h = 700
+
+ws = GUI.winfo_screenwidth() #screen width
+hs = GUI.winfo_screenheight() #screen height
+
+
+x = (ws/2) - (w/2)
+y = (hs/2) - (h/2)
+
+GUI.geometry(f'{w}x{h}+{x:.0f}+{y:.0f}')
 
 
 
@@ -207,7 +219,7 @@ def UpdateCSV():
 		fw.writerows(data) # multiple line from nested list [[],[],[]]
 		print('Table was updated')
 
-
+######DeleteRecord#######
 def DeleteRecord(event=None):
 	check = messagebox.askyesno('Confirm?','คุณต้องการลบข้อมูลใช่หรือไม่?')
 	print('YES/NO:',check)
@@ -220,6 +232,7 @@ def DeleteRecord(event=None):
 		data = data['values']
 		transactionid = data[0]
 		#print(transactionid)
+		#transactionid ห้ามขึ้นต้นด้วย เลข 0
 		#print(type(transactionid))
 		del alltransaction[str(transactionid)] # delete data in dict
 		#print(alltransaction)
@@ -247,6 +260,88 @@ def update_table():
 	except Exception as e:
 		print('No File')
 		print('ERROR:',e)
+
+
+
+#############Right Click#############
+
+def EditRecord():
+	POPUP = Toplevel() #คล้ายๆกับ TK ที่ต้องประกาศเป็น toplevel เพราะว่า tk ใช้ได้ครั้งเดียว
+	# POPUP.geometry('400x400')
+	w = 400
+	h = 400
+
+	ws = POPUP.winfo_screenwidth() #screen width
+	hs = POPUP.winfo_screenheight() #screen height
+
+
+	x = (ws/2) - (w/2)
+	y = (hs/2) - (h/2)
+
+	POPUP.geometry(f'{w}x{h}+{x:.0f}+{y:.0f}')
+
+	#---pack 1 ----
+	L = ttk.Label(POPUP,text='รายการค่าใช้จ่าย',font=FONT1).pack()
+	v_expense = StringVar() # StringVar() คือ ตัวแปรพิเศษสำหรับเก็บข้อมูลใน GUI
+	E1 = ttk.Entry(POPUP,textvariable=v_expense,font=FONT1)#ช่องรับข้อมูล
+	E1.pack()
+	#----------------
+
+	#---pack 2 ----
+	L = ttk.Label(POPUP,text='ราคา(บาท)',font=FONT1).pack()
+	v_price = StringVar() # StringVar() คือ ตัวแปรพิเศษสำหรับเก็บข้อมูลใน GUI
+	E2 = ttk.Entry(POPUP,textvariable=v_price,font=FONT1)#ช่องกรอกข้อมูล
+	E2.pack()
+	#----------------
+
+	#---pack 3 ----
+	L = ttk.Label(POPUP,text='จำนวน(ชิ้น)',font=FONT1).pack()
+	v_quantity = StringVar() # StringVar() คือ ตัวแปรพิเศษสำหรับเก็บข้อมูลใน GUI
+	E3 = ttk.Entry(POPUP,textvariable=v_quantity,font=FONT1)#ช่องกรอกข้อมูล
+	E3.pack()
+	#----------------
+	def Edit():
+		# print(transactionid)
+		# print(alltransaction)
+		olddata = alltransaction[str(transactionid)]
+		print('OLD:',olddata)
+		v1 = v_expense.get()
+		v2 = float(v_price.get())
+		v3 = float(v_quantity.get())
+		total = v2*v3
+		newdata = [olddata[0],olddata[1],v1,v2,v3,total]
+		alltransaction[str(transactionid)] = newdata
+		UpdateCSV()
+		update_table()
+		POPUP.destroy() #สั่งปิด pop up
+
+	B2 = ttk.Button(POPUP,image=img1,text=f'{"Save" : ^{20}}',command=Edit,compound='left')
+	B2.pack(ipadx=50,ipady=20,pady=20)
+	#Get data in select record
+	select = resulttable.selection()
+	print(select)
+	data = resulttable.item(select)
+	data = data['values']
+	transactionid = data[0]
+#set ค่าเก่าไว้ที่ช่องกรอก
+	v_expense.set(data[2]) 
+	v_price.set(data[3])
+	v_quantity.set(data[4])
+
+	POPUP.mainloop()
+
+rightclick = Menu(GUI,tearoff=0)
+#tearoff คือ การฉีกออกมา
+rightclick.add_command(label= 'Edit',command=EditRecord)
+rightclick.add_command(label= 'Delete',command=DeleteRecord)
+
+def menupopup(event):
+	#print(event.x_root,event.y_root) เอาไว้เช็คตำแหน่ง
+	rightclick.post(event.x_root,event.y_root)
+
+
+##แปลว่า หากมีการคลิกขวา จะเกิด pop up ขึ้นมา##
+resulttable.bind('<Button- 3>',menupopup)
 
 
 update_table()
